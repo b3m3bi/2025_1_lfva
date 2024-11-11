@@ -1,12 +1,28 @@
+patches-own [
+  dominado?
+]
+
 to setup
   clear-all
   ask patches [
     set pcolor one-of [blue cyan sky]
+    set dominado? False
   ]
   reset-ticks
 end
 
+;; Luis: te quedó bien tu autómata. Solo que es asincrónico.
+;; para que sea un autómata RSP clásico debe ser sincrónico.
+;; Para eso debes de separar el procedimiento donde revisa
+;; si si debe actualizarse de la actualización. Para eso
+;; primero cada celda registra si es dominada o no, y luego
+;; ya que todas las celdas revisaron si deben ser actualizadas
+;; o no, en otro bloque se actualiza el color.
 to go
+  ask patches [
+    set dominado? me_dominan?
+  ]
+
   ask patches [
     colorear_celdas
   ]
@@ -25,9 +41,9 @@ end
 
 to colorear_celdas
   let nuevo-color pcolor
-  if pcolor = blue and me_dominan? [set nuevo-color sky]
-  if pcolor = sky and me_dominan? [set nuevo-color cyan]
-  if pcolor = cyan and me_dominan? [set nuevo-color blue]
+  if pcolor = blue and dominado? [set nuevo-color sky]  ;; aquí solo le cambio a que revisen su variable dominado? que ya actualizaron previamente
+  if pcolor = sky and dominado? [set nuevo-color cyan]
+  if pcolor = cyan and dominado? [set nuevo-color blue]
   set pcolor nuevo-color
 end
 @#$#@#$#@
@@ -121,7 +137,7 @@ numero_de_vecinos
 numero_de_vecinos
 1
 9
-3.0
+2.0
 1
 1
 NIL
