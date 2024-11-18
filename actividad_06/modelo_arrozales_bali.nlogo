@@ -95,12 +95,16 @@ to elegir_siguiente_itinerario
     ] [
       set I_t1 I_t
     ]
-    stop
+    stop  ;; <- Luis: Para no poner los stops y evitar que evaluen todos los ifs se puede usar un ifelse encerrado entre paréntesis.
   ]
 
+  ;; Luis: Esta es una regla interesante, la que los autores implementan es elegir
+  ;; un itinerario al azar de todos los posibles, aquí lo que tu haces es solo elegirla de entre los vecinos.
+  ;; Esto genera un patrón que se ve más bonito y una mayor cosecha en ciertas condiciones... interesante.
   if regla_decision = "aleatorio" [
     let vecino_aleatorio one-of vecinos_cosecha
     set I_t1 [I_t] of vecino_aleatorio
+    set I_t1 one-of itinerarios
     stop
   ]
 
@@ -111,14 +115,38 @@ to elegir_siguiente_itinerario
     stop
   ]
 
+  ;; Luis: Esta no funciona como se esperaría, el partón que genera es más como el de selección al azar,
+  ;; consideradno todos los itinerarios. La primera expresión de tu implementación no está filtrando a los valores de la minoría.
+  ;; Te pongo otra aproximación abajo.
+;  if regla_decision = "minoria" [
+;    let itinerarios_minoria filter [i -> i >= 0 and i <= 3 and count vecinos_cosecha with [I_t = i] = 1] [I_t] of vecinos_cosecha
+;
+;    ifelse not empty? itinerarios_minoria [
+;      set I_t1 one-of itinerarios_minoria
+;    ] [
+;      set I_t1 I_t
+;    ]
+;  ]
   if regla_decision = "minoria" [
-    let itinerarios_minoria filter [i -> i >= 0 and i <= 3 and count vecinos_cosecha with [I_t = i] = 1] [I_t] of vecinos_cosecha
-
-    ifelse not empty? itinerarios_minoria [
-      set I_t1 one-of itinerarios_minoria
-    ] [
-      set I_t1 I_t
+    ;; creamos una lista, que va a ser una lista de listas con el itinerario y el conteo
+    ;; se verá algo así: [[0 2][1 0][2 1][3 1]], indicando que hay 2 vecinos con itinerario 0,
+    ;; 1 con itineario 2 y 1 con itinearaio 3 y ninguno con itinerario 1.
+    let itine_conteo []
+    ;; llenar la lista itine con el indice/itinerario y conteo
+    foreach range 4 [
+      i ->
+      set itine_conteo lput (list i (count vecinos_cosecha with [I_t = i])) itine_conteo
     ]
+    ;; obtener una lista de solo los conteos
+    let conteos map [l -> item 1 l ] itine_conteo
+    ;; obtener el mínimo de los conteos
+    let minimo min conteos
+    ;; obtener una sublista de itine con solo los elementos cuyo conteo es igual al mínimo
+    let itine_conteo_minimo filter [l -> (item 1 l) = minimo ] itine_conteo
+    ;; obtener una lista de solo los itinerarios de los mínimos
+    let itine_minimo map [l -> item 0 l ] itine_conteo_minimo
+    ;; se asigna un ininterio mínimo al azar
+    set I_t1 one-of itine_minimo
   ]
 end
 
@@ -261,7 +289,7 @@ a
 a
 0
 0.5
-0.0
+0.5
 0.01
 1
 NIL
@@ -276,7 +304,7 @@ b
 b
 0
 10
-4.6
+9.6
 0.1
 1
 NIL
@@ -319,7 +347,7 @@ CHOOSER
 regla_decision
 regla_decision
 "maximo" "aleatorio" "mayoria" "minoria"
-0
+3
 
 @#$#@#$#@
 ## WHAT IS IT?
